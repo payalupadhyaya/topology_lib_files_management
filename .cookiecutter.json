@@ -1,0 +1,11 @@
+{
+    "library_name": "topology_lib_files_management",
+    "author": "maria alas",
+    "email": "maria.alas@hpe.com",
+    "repo_url": "https://github.com/maralas/topology_files_management",
+    "doc_url": "https://github.com/maralas/topology_files_management/tree/master/doc",
+    "project_name": "files management",
+    "short_description": "This library will have every command related with files management",
+    "year": "2016",
+    "version": "0.1.0"
+}
