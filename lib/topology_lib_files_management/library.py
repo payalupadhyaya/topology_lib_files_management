@@ -188,7 +188,36 @@ def rm_command(enode, file_to_rm, d=False, f=True, i=False, r=False, v=False,
     rm_response = enode(rm_cmd, shell=shell)
     assert rm_response is ''
 
+
+def sftp_getfile(enode, user, server_ip, source_file_path, dest_file_path):
+    """
+    This function uses sftp command to get file from remote  sftp server
+
+    source_file_path: This can be a path with file name or just a file name
+    lying in remote sftp server
+
+    dest_file_path: This can be a path with file name or just file name to be
+    copied to sftp client(enode)
+    """
+
+    sftp_command = 'sftp {}@{}:{} {}'.format(
+        user, server_ip, source_file_path, dest_file_path)
+    pass_response = enode(sftp_command, shell='bash')
+    if 'authenticity' in pass_response:
+        enode('yes', shell='bash')
+    assert '100%' in pass_response, 'sftp copy failed'
+
+
+def file_exists(enode, file_name, path):
+    """
+    This method is used to check file existenc in given path
+    """
+    file_exists = enode('ls {}'.format(path), shell='bash')
+    assert file_name in file_exists, 'file does not exists'
+
 __all__ = [
     'scp_command',
-    'rm_command'
+    'rm_command',
+    'sftp_getfile',
+    'file_exists'
 ]
