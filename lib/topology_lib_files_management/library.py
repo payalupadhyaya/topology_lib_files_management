@@ -21,7 +21,7 @@ topology_lib_files_management communication library implementation.
 
 from __future__ import unicode_literals, absolute_import
 from __future__ import print_function, division
-
+import os
 # Add your library functions here.
 
 
@@ -215,9 +215,72 @@ def file_exists(enode, file_name, path):
     file_exists = enode('ls {}'.format(path), shell='bash')
     assert file_name in file_exists, 'file does not exists'
 
+
+def echo_filecopy(enode, source_file_path, destn_file_path):
+
+    """
+    This function will copy the source file to enode destination file path
+    using enode rapid fire() with echo command.
+
+    source_file_path: This is the file, or path or the file to be copied
+
+    destn_file_path: This is the file, or path for the destination on enode
+    """
+    assert len(source_file_path) > 0, "empty source file path"
+    # TODO add a check for source file existance
+    assert os.path.isfile(source_file_path), "source file doesn't exists"
+    assert len(destn_file_path) > 0, "empty destination file path"
+    file_remove_command = "rm "+destn_file_path
+    enode(file_remove_command, shell="bash")
+    with open(source_file_path, "r") as source_file:
+        for line in source_file:
+            enode('echo "' + line + '" >> ' + destn_file_path,
+                  shell="bash")
+
+
+def create_filebkup(enode, destn_file_path):
+
+    """
+    This function will create backup of the specified file at same destn path
+
+    :destn_file_path: This is the file, or path for the destination on enode
+     where backup needs to be created with an extension ".bkup"
+    """
+    assert len(destn_file_path) > 0, "empty destination file path"
+    # TODO add a check for destination file existance
+    remote_file_chk_command = "ls -l "+destn_file_path
+    output = enode(remote_file_chk_command, shell="bash")
+    assert "No such file or directory" not in output, "destn file not exists"
+    backup_destn_file_path = destn_file_path + ".bkup"
+    backup_create_command = "cp "+destn_file_path+" "+backup_destn_file_path
+    enode(backup_create_command, shell="bash")
+
+
+def restore_filebkup(enode, destn_file_path):
+
+    """
+    This function will restores backup of the specified file at same destn path
+    and deletes the .bkup file
+
+    :destn_file_path: This is the file, or path for the destination on
+     enode to be restored back from destn_file_path.bkup file
+    """
+    assert len(destn_file_path) > 0, "empty destination file path"
+    backup_destn_file_path = destn_file_path + ".bkup"
+    # TODO add a check for source file existance
+    remote_file_chk_command = "ls -l "+backup_destn_file_path
+    output = enode(remote_file_chk_command, shell="bash")
+    assert "No such file or directory" not in output, "dest file not exists"
+    backup_restore_command = "cp "+backup_destn_file_path+" "+destn_file_path
+    enode(backup_restore_command, shell="bash")
+    enode("rm -f "+backup_destn_file_path, shell="bash")
+
 __all__ = [
     'scp_command',
     'rm_command',
     'sftp_getfile',
-    'file_exists'
+    'file_exists',
+    'echo_filecopy',
+    'create_filebkup',
+    'restore_filebkup'
 ]
