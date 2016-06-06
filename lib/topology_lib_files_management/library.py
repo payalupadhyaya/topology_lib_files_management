@@ -22,6 +22,9 @@ topology_lib_files_management communication library implementation.
 from __future__ import unicode_literals, absolute_import
 from __future__ import print_function, division
 import os
+import re
+import requests
+import codecs
 # Add your library functions here.
 
 
@@ -275,6 +278,66 @@ def restore_filebkup(enode, destn_file_path):
     enode(backup_restore_command, shell="bash")
     enode("rm -f "+backup_destn_file_path, shell="bash")
 
+
+def _get_file_contents(file_orig):
+    """ Returns the contents of a file hosted on local or remote location """
+    # TODO: Add support for other remotes, e.g. ftp://
+    is_remote = re.compile("http[s]?://")
+    if is_remote.match(file_orig):
+        result = requests.get(file_orig)
+        assert result.status_code is not requests.codes.not_found, \
+            "File not found: {}".format(file_orig)
+        assert result.status_code is requests.codes.ok, \
+            "Unable to get file: {} Error code: {}" \
+            "".format(file_orig,
+                      result.status_code)
+        file_contents = result.text
+    else:
+        try:
+            file = open(file_orig)
+            file_contents = file.read()
+            file.close()
+        except Exception as e:
+            assert False, "Unable to get file {}: {}".format(file_orig, e)
+    return file_contents
+
+
+def _python_exec(shell, cmd):
+    """ Uses a node shell to run a command and expect Python's prompt """
+    shell.send_command(cmd, matches=">>> ")
+
+
+def transfer_file(enode, name, file_orig, dst_path="/tmp"):
+    """  Transfer a remote or local text file using remote's Python
+
+    The node must support Python with the "codecs" package
+    The codecs package is used to transfer the file using hex format
+    This is handy when transferring text files that may have special chars
+    that are not properly handled with echo or other tools.
+
+    Arguments:
+    enode - the Modular Framework node to where to copy the file
+    name - the name to give the file after it is copied
+    url - URL to fetch the file from (including file name)
+    location -- final location where to put the file in remote node
+    """
+    file_contents = _get_file_contents(file_orig)
+    # Encoding the file makes it easy to handle special chars
+    encoded = codecs.encode(file_contents.encode(), "hex").decode()
+    remote_file = "{dst_path}/{name}".format(**locals())
+    # From this point onwards, use remote's Python
+    shell = enode.get_shell("bash")
+    _python_exec(shell, "python")
+    # Store the decoded content on a remote's Python variable
+    _python_exec(shell, "import codecs")
+    _python_exec(shell, "decoded = codecs.decode('{encoded}', 'hex').decode()"
+                       "".format(**locals()))
+    # Write the decoded contents to file
+    _python_exec(shell, "file = open('{remote_file}', 'w')".format(**locals()))
+    _python_exec(shell, "file.write(decoded)")
+    _python_exec(shell, "file.close()")
+    shell.send_command("exit()")
+
 __all__ = [
     'scp_command',
     'rm_command',
@@ -282,5 +345,6 @@ __all__ = [
     'file_exists',
     'echo_filecopy',
     'create_filebkup',
-    'restore_filebkup'
+    'restore_filebkup',
+    'transfer_file',
 ]
