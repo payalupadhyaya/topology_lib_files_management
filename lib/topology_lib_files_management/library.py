@@ -331,7 +331,7 @@ def transfer_file(enode, name, file_orig, dst_path="/tmp"):
     # Store the decoded content on a remote's Python variable
     _python_exec(shell, "import codecs")
     _python_exec(shell, "decoded = codecs.decode('{encoded}', 'hex').decode()"
-                       "".format(**locals()))
+                        "".format(**locals()))
     # Write the decoded contents to file
     _python_exec(shell, "file = open('{remote_file}', 'w')".format(**locals()))
     _python_exec(shell, "file.write(decoded)")
