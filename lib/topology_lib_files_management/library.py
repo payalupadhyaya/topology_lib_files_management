@@ -307,19 +307,31 @@ def _python_exec(shell, cmd):
     shell.send_command(cmd, matches=">>> ")
 
 
+def exists(enode, file):
+    """
+    Verifies the file existence with stat
+
+    :param file: the file name (and path if needed)
+    :returns: whether the file exists or not
+    :rtype: Boolean
+    """
+
+    res = enode("stat {file}".format(**locals()), shell="bash")
+    return "stat: cannot stat" not in res
+
+
 def transfer_file(enode, name, file_orig, dst_path="/tmp"):
-    """  Transfer a remote or local text file using remote's Python
+    """
+    Transfer a remote or local text file using remote's Python
 
     The node must support Python with the "codecs" package
     The codecs package is used to transfer the file using hex format
     This is handy when transferring text files that may have special chars
     that are not properly handled with echo or other tools.
 
-    Arguments:
-    enode - the Modular Framework node to where to copy the file
-    name - the name to give the file after it is copied
-    url - URL to fetch the file from (including file name)
-    location -- final location where to put the file in remote node
+    :param name: the name to give the file after it is copied
+    :param file_orig: URL to fetch the file from (including file name)
+    :param dst_path: final location where to put the file in remote node
     """
     file_contents = _get_file_contents(file_orig)
     # Encoding the file makes it easy to handle special chars
@@ -346,5 +358,6 @@ __all__ = [
     'echo_filecopy',
     'create_filebkup',
     'restore_filebkup',
+    'exists',
     'transfer_file',
 ]
