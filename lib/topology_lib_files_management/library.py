@@ -1,19 +1,11 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2016 Hewlett Packard Enterprise Development LP
+# All Rights Reserved.
 #
-# Copyright (C) 2016 Maria Alas
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
+# The contents of this software are proprietary and confidential
+# to the Hewlett Packard Enterprise Development LP. No part of this
+# program may be photocopied, reproduced, or translated into another
+# programming language without prior written consent of the
+# Hewlett Packard Enterprise Development LP.
 
 """
 topology_lib_files_management communication library implementation.
@@ -25,7 +17,6 @@ import os
 import re
 import requests
 import codecs
-# Add your library functions here.
 
 
 def scp_command(enode, origin_file, destination_file, remote_user=None,
@@ -35,62 +26,40 @@ def scp_command(enode, origin_file, destination_file, remote_user=None,
                 four=False, six=False, shell='bash'):
     """
     This function will execute a SCP command on the enode
+    IMPORTANT: It is implemented to work from bash of the SW
 
-    -origin_file: the path and the file that you want to copy,
-    example: /etc/ssl/certs/server.crt
-
-    -destination_file: this will be the path of the destination,
-    example: /home/.
-
-    -remote_user: this should be the user of the remote host
-
-    -remote_ip: this should be the IP address of the remote host
-
-    -remote_side= origin|destination this should be whom is the remote side,
-    if the value is not origin, it will do with the destination as remote
-
-    -remote_pass: this should be the password of the remote host
-
-    -c cipher; selects the cipher to use for encrypting the data
-    transfer. This option is directly passed to ssh(1)
-
-    -i identity_file: Selects the file from which the identity (private key)
-    for RSA authentication is read. This option is directly passed to ssh(1)
-
-    -p: Preserves modification times, access times,
-    and modes from the original file.
-
-    -r: Recursively copy entire directories.
-
-    -v: Verbose mode. Causes scp and ssh(1) to print debugging messages about
-    their progress. This is helpful in debugging connection, authentication,
-    and configuration problems.
-
-    -batch: -B: Selects batch mode (prevents asking for passwords).
-
-    -q: Disables the progress meter.
-
-    -compress = -C: Compression enable. Passes the -C flag to ssh(1) to enable
-    compression.
-
-    -ssh_file = -S ssh_config: Specifies an alternative per-user configuration
-    file for ssh. This option is directly passed to ssh(1).
-
-    -port = -P port: Specifies the port to connect to on the remote host. Note
-    that this option is written with a capital `P' because -p is already
-    reserved for preserving the times and modes of the file in rcp(1).
-
-    -program = -S program: Name of program to use for the encrypted connection.
-    The program must understand ssh(1) options.
-
-    -o ssh_option: Can be used to pass options to ssh in the format used in
-    ssh_config5. This is useful for specifying options for which there is no
-    separate scp command-line flag. For example, forcing the use of protocol
-    version 1 is specified using scp -oProtocol=1
-
-    -four = -4: Forces scp to use IPv4 addresses only.
-
-    - six = -6: Forces scp to use IPv6 addresses only
+    :param str origin_file: The file or path to copy.
+    :param str destination_file: The destination path Ex. /home/.
+    :param str remote_user: The user of the remote host.
+    :param str remote_ip: The IP Address of the remote host.
+    :param str remote_side: Whom is the remote side.
+    Options: origin|destination; Default: destination
+    :param str remote_pass: The password of the remote host.
+    :param str c: Selects the cipher to use for encrypting the data transfer.
+    This option is directly passed to ssh(1).
+    :param str i: Selects the file from which the identity (private key)
+    for RSA authentication is read. This option is directly passed to ssh.
+    :param bool p: Preserves modification times, access times,
+    and modes from the original file; Default: False.
+    :param bool r: Recursively copy entire directories; Default: False.
+    :param bool v: Verbose mode. Causes scp and ssh to print debugging messages
+    about their progress. This is helpful in debugging connection, authentica-
+    tion, and configuration problems; Default: False.
+    :param bool bash: -B: Selects batch mode (prevents asking for passwords);
+    Default: False.
+    :param bool q: Disables the progress meter;  Default: False.
+    :param bool compress: -C: Compression enable flag to SSH; Default: False.
+    :param str ssh_file: -S ssh_config: Specifies an alternative per-user
+    configuration file for ssh. This option is directly passed to ssh.
+    :param str port: Specifies the port to connect to on the remote host. Note:
+    that this option is written with a capital 'port' because 'p' is already
+    reserved for preserving the times and modes of the file in rcp.
+    :param str program: Name of program to use for the encrypted connection.
+    The program must understand ssh options. -S command.
+    :param str o: ssh_option: Can be used to pass options to ssh in the format
+    used in ssh_config5.
+    :param bool four: -4: Forces scp to use IPv4 addresses only; Default: False
+    :param bool six: -6: Forces scp to use IPv6 addresses only. Default: False.
     """
 
     arguments = locals()
@@ -138,14 +107,14 @@ def scp_command(enode, origin_file, destination_file, remote_user=None,
 
     if remote_user is not None:
         enode._bash_prompt = (
-                r'Are you sure you want to continue connecting'
-                r' \(yes/no\)\?|root.* password: '
-                )
+            r'Are you sure you want to continue connecting'
+            r' \(yes/no\)\?|root.* password: '
+            )
         response = enode(scp_cmd, shell=shell)
         if 'authenticity' in response:
             enode('yes', shell=shell)
         enode._bash_prompt = (
-                r'\r\n[^\r\n]+@.+[#$]'
+            r'\r\n[^\r\n]+@.+[#$]'
         )
         pass_response = enode(remote_pass, shell=shell)
         assert '100%' in pass_response
@@ -159,21 +128,17 @@ def rm_command(enode, file_to_rm, d=False, f=True, i=False, r=False, v=False,
     """
     This function will execute rm in a linux machine
 
-    file_to_rm: This is the file, or path or the file, or directory that will
-    be removed
-
-    -d: --directory Unlink FILE, even if it is a non-empty directory
-    (super-user only)
-
-    -f: --force Ignore nonexistent files, never prompt
-    **If this flag is set as FALSE, it will need to add the functionality
+    :param str file_to_rm: This is the file, or path or the file, or directory
+    that will be removed.
+    :param bool d: --directory Unlink FILE, even if it is a non-empty directory
+    (super-user only); Default: False.
+    :param bool f: Ignore nonexistent files, never prompt. Default: True.
+    ***If this flag is set as FALSE, it will need to add the functionality
     of answer the question of the prompt, since it is not implemented yet***
-
-    -i: --interactive, prompt before any removal
-
-    -r, -R, --recursive, remove the contents of directories recursively
-
-    -v, --verbose: explain what is being done
+    :param bool i: --interactive, prompt before any removal; Default: False.
+    :param bool r: Remove the contents of directories recursively;
+    Default: False.
+    :param bool v: --verbose; explain what is being done; Default: False.
     """
 
     arguments = locals()
@@ -194,13 +159,12 @@ def rm_command(enode, file_to_rm, d=False, f=True, i=False, r=False, v=False,
 
 def sftp_getfile(enode, user, server_ip, source_file_path, dest_file_path):
     """
-    This function uses sftp command to get file from remote  sftp server
+    This function uses sftp command to get file from remote sftp server
 
-    source_file_path: This can be a path with file name or just a file name
-    lying in remote sftp server
-
-    dest_file_path: This can be a path with file name or just file name to be
-    copied to sftp client(enode)
+    :param str source_file_path: This can be a path with file name or just a
+    file name lying in remote sftp server
+    :param str dest_file_path: This can be a path with file name or just file
+    name to be copied to sftp client(enode)
     """
 
     sftp_command = 'sftp {}@{}:{} {}'.format(
@@ -213,7 +177,11 @@ def sftp_getfile(enode, user, server_ip, source_file_path, dest_file_path):
 
 def file_exists(enode, file_name, path):
     """
-    This method is used to check file existenc in given path
+    This method is used to check file exist in given path
+    using ls command
+
+    :param str file_name: File name to verify if exists
+    :param str path: Path of the file
     """
     file_exists = enode('ls {}'.format(path), shell='bash')
     assert file_name in file_exists, 'file does not exists'
@@ -225,9 +193,10 @@ def echo_filecopy(enode, source_file_path, destn_file_path):
     This function will copy the source file to enode destination file path
     using enode rapid fire() with echo command.
 
-    source_file_path: This is the file, or path or the file to be copied
-
-    destn_file_path: This is the file, or path for the destination on enode
+    :param str source_file_path: This is the file, or path or the file to be
+    copied
+    :param str destn_file_path: This is the file, or path for the destination
+    on enode
     """
     assert len(source_file_path) > 0, "empty source file path"
     # TODO add a check for source file existance
@@ -246,8 +215,8 @@ def create_filebkup(enode, destn_file_path):
     """
     This function will create backup of the specified file at same destn path
 
-    :destn_file_path: This is the file, or path for the destination on enode
-     where backup needs to be created with an extension ".bkup"
+    :param str destn_file_path: This is the file, or path for the destination
+    on enode where backup needs to be created with an extension ".bkup"
     """
     assert len(destn_file_path) > 0, "empty destination file path"
     # TODO add a check for destination file existance
@@ -265,8 +234,8 @@ def restore_filebkup(enode, destn_file_path):
     This function will restores backup of the specified file at same destn path
     and deletes the .bkup file
 
-    :destn_file_path: This is the file, or path for the destination on
-     enode to be restored back from destn_file_path.bkup file
+    :param str destn_file_path: This is the file, or path for the destination
+    on enode to be restored back from destn_file_path.bkup file
     """
     assert len(destn_file_path) > 0, "empty destination file path"
     backup_destn_file_path = destn_file_path + ".bkup"
@@ -280,7 +249,13 @@ def restore_filebkup(enode, destn_file_path):
 
 
 def _get_file_contents(file_orig):
-    """ Returns the contents of a file hosted on local or remote location """
+    """
+    Returns the contents of a file hosted on local or remote location
+
+    :param str file_orig: File to get content.
+    :returns: The content of the file.
+    :rtype: str.
+    """
     # TODO: Add support for other remotes, e.g. ftp://
     is_remote = re.compile("http[s]?://")
     if is_remote.match(file_orig):
