@@ -106,17 +106,17 @@ def scp_command(enode, origin_file, destination_file, remote_user=None,
     scp_cmd = 'scp {0}{1}'.format(options, command)
 
     if remote_user is not None:
-        enode._bash_prompt = (
-            r'Are you sure you want to continue connecting'
-            r' \(yes/no\)\?|root.* password: '
-            )
-        response = enode(scp_cmd, shell=shell)
-        if 'authenticity' in response:
-            enode('yes', shell=shell)
-        enode._bash_prompt = (
-            r'\r\n[^\r\n]+@.+[#$]'
+        bash = enode.get_shell('bash')
+        match_prompt = (
+            r'\(yes/no\)\?|password: '
         )
-        pass_response = enode(remote_pass, shell=shell)
+        bash.send_command(scp_cmd, matches=match_prompt)
+        response = bash.get_response()
+
+        if 'Are you sure you want' in response:
+            bash.send_command('yes', matches=match_prompt)
+        bash.send_command(remote_pass)
+        pass_response = bash.get_response()
         assert '100%' in pass_response
     else:
         scp_response = enode(scp_cmd, shell=shell)
