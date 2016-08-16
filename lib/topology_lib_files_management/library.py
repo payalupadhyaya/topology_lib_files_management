@@ -157,22 +157,43 @@ def rm_command(enode, file_to_rm, d=False, f=True, i=False, r=False, v=False,
     assert rm_response is ''
 
 
-def sftp_getfile(enode, user, server_ip, source_file_path, dest_file_path):
+def sftp_get(host, user_name, dut_ip, src_path, source_file, dst_path,
+             destination_file, timeout=180, step=None, **kwargs):
     """
-    This function uses sftp command to get file from remote sftp server
+    SFTP server and client functions for workstation.
 
-    :param str source_file_path: This can be a path with file name or just a
-    file name lying in remote sftp server
-    :param str dest_file_path: This can be a path with file name or just file
-    name to be copied to sftp client(enode)
+    :param node: A modular framework HOST object that supports the bash
+    :param dut_ip: The management interface IP address of the switch
+    :param user_name: User name for SFTP server
+    :param src_path: Absolute path of source file
+    :param source_file: Name if the file to be transferred
+    :param dst_path: Absolute path of the destination folder
+    :param destination_file: Name of the destination file
+    :param timeout: Time in seconds before the command triggers a timeout
     """
+    step("get file {} from sftp server".format(source_file))
 
-    sftp_command = 'sftp {}@{}:{} {}'.format(
-        user, server_ip, source_file_path, dest_file_path)
-    pass_response = enode(sftp_command, shell='bash')
-    if 'authenticity' in pass_response:
-        enode('yes', shell='bash')
-    assert '100%' in pass_response, 'sftp copy failed'
+    password = kwargs.get('password', None)
+    src_path = src_path + source_file
+    dst_path = dst_path + destination_file
+    sftp_command = \
+    'sftp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {}@{}:{} {}'.format(  # noqa
+     user_name, dut_ip, src_path, dst_path)
+
+    bash = host.get_shell('bash')
+    if password != "None":
+        bash.send_command(
+            sftp_command, matches='Permanently added.*password: ',
+            timeout=timeout)
+        bash.send_command(password, timeout=timeout)
+    else:
+        bash.send_command(sftp_command, timeout=timeout)
+    assert bash.get_response()
+    print(bash.get_response())
+    success_string = 'Fetching ' + src_path + ' to ' + dst_path
+    assert success_string in bash.get_response(), 'Sftpcopy failed from dut \
+                                               to host'
+    return bash.get_response()
 
 
 def file_exists(enode, file_name, path):
@@ -188,7 +209,6 @@ def file_exists(enode, file_name, path):
 
 
 def echo_filecopy(enode, source_file_path, destn_file_path):
-
     """
     This function will copy the source file to enode destination file path
     using enode rapid fire() with echo command.
@@ -202,7 +222,7 @@ def echo_filecopy(enode, source_file_path, destn_file_path):
     # TODO add a check for source file existance
     assert os.path.isfile(source_file_path), "source file doesn't exists"
     assert len(destn_file_path) > 0, "empty destination file path"
-    file_remove_command = "rm "+destn_file_path
+    file_remove_command = "rm " + destn_file_path
     enode(file_remove_command, shell="bash")
     with open(source_file_path, "r") as source_file:
         for line in source_file:
@@ -211,7 +231,6 @@ def echo_filecopy(enode, source_file_path, destn_file_path):
 
 
 def create_filebkup(enode, destn_file_path):
-
     """
     This function will create backup of the specified file at same destn path
 
@@ -220,16 +239,16 @@ def create_filebkup(enode, destn_file_path):
     """
     assert len(destn_file_path) > 0, "empty destination file path"
     # TODO add a check for destination file existance
-    remote_file_chk_command = "ls -l "+destn_file_path
+    remote_file_chk_command = "ls -l " + destn_file_path
     output = enode(remote_file_chk_command, shell="bash")
     assert "No such file or directory" not in output, "destn file not exists"
     backup_destn_file_path = destn_file_path + ".bkup"
-    backup_create_command = "cp "+destn_file_path+" "+backup_destn_file_path
+    backup_create_command = "cp " + \
+        destn_file_path + " " + backup_destn_file_path
     enode(backup_create_command, shell="bash")
 
 
 def restore_filebkup(enode, destn_file_path):
-
     """
     This function will restores backup of the specified file at same destn path
     and deletes the .bkup file
@@ -240,12 +259,13 @@ def restore_filebkup(enode, destn_file_path):
     assert len(destn_file_path) > 0, "empty destination file path"
     backup_destn_file_path = destn_file_path + ".bkup"
     # TODO add a check for source file existance
-    remote_file_chk_command = "ls -l "+backup_destn_file_path
+    remote_file_chk_command = "ls -l " + backup_destn_file_path
     output = enode(remote_file_chk_command, shell="bash")
     assert "No such file or directory" not in output, "dest file not exists"
-    backup_restore_command = "cp "+backup_destn_file_path+" "+destn_file_path
+    backup_restore_command = "cp " + \
+        backup_destn_file_path + " " + destn_file_path
     enode(backup_restore_command, shell="bash")
-    enode("rm -f "+backup_destn_file_path, shell="bash")
+    enode("rm -f " + backup_destn_file_path, shell="bash")
 
 
 def _get_file_contents(file_orig):
@@ -328,7 +348,7 @@ def transfer_file(enode, name, file_orig, dst_path="/tmp"):
 __all__ = [
     'scp_command',
     'rm_command',
-    'sftp_getfile',
+    'sftp_get',
     'file_exists',
     'echo_filecopy',
     'create_filebkup',
